@@ -36,14 +36,14 @@ void dfs(int y, int x, int dir) {
 		int nx = dx[dir]*i + x;
 		int ny = dy[dir]*i + y;
 
-		if (nx < 0 || ny < 0 || nx >= N || ny >= N) continue;
+		if (nx < 0 || ny < 0 || nx >= N || ny >= N) return;
 	
 		// 사이 경로 방문 처리
 		for (int j = 1; j <= i; j++)
 		{
 			int nx2 = dx[dir] * j + x;
 			int ny2 = dy[dir] * j + y;
-			// 경로 사이에 중복되는 디저트 종류 존재
+			// 경로 사이에 중복되는 디저트 종류 존재할 경우
 			if (visited[arr[ny2][nx2]]) {
 				for (int k = 0; k < j; k++)
 				{
@@ -84,16 +84,17 @@ int main(int argc, char** argv)
 				cin >> arr[i][j];
 			}
 		}
-		for (int i = 0; i < N; i++)
+
+		// 우하 -> 좌하 -> 좌상 -> 우상
+		for (int i = 0; i < N-2; i++)
 		{
-			for (int j = 0; j < N; j++)
+			for (int j = 1; j < N-1; j++)
 			{
 				memset(visited, 0, sizeof(visited));
 				st_y = i; st_x = j; 
 				dfs(st_y, st_x, 0);
 			}
 		}
-
 
 		cout << "#" << test_case << " "<< res << "\n";
 	}
