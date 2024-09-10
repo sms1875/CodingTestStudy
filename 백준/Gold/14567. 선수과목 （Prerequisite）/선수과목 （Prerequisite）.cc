@@ -21,6 +21,9 @@ void solve(const int &cur, vector<vector<int>> &prerequisites, vector<int> &dp) 
 }
 
 int main() {
+    std::ios::sync_with_stdio(0);
+	std::cin.tie(0); std::cout.tie(0);
+    
 	int N, M;
 	cin >> N >> M;
 
