@@ -1,30 +1,48 @@
-#include <bits/stdc++.h>
+#include <iostream>
+#include <vector>
+#include <queue>
 using namespace std;
 
-vector<int> adj[32001];
-int deg[32001];
-int n,m;
+int N, M;
 
-int main (){
-    cin >> n >> m;
-    while(m--){
-        int a, b;
-        cin >> a >> b;// 4 3  , 4 1
-        adj[a].push_back(b);//adj[4]=3,1
-        deg[b]++;//deg[1]=1 , deg[3]=1
-    }
-    
-    queue<int> q;  
-    for(int i = 1; i <= n; i++){
-        if(deg[i] == 0) q.push(i);//2, 4 
-    }
-  
-    while(!q.empty()){
-        int cur = q.front(); q.pop();
-        cout << cur << ' ';
-        for(int nxt : adj[cur]){ 
-            deg[nxt]--;
-          if(deg[nxt] == 0) q.push(nxt);     
-        }
-    }
+int main() {
+	std::ios::sync_with_stdio(0);
+	std::cin.tie(0); std::cout.tie(0);
+
+	cin >> N >> M;
+
+	vector<vector<int>> adj(N + 1);
+	vector<int> degree(N + 1);
+
+	for (int i = 0; i < M; i++)
+	{
+		int a, b;
+		cin >> a >> b;
+		adj[a].push_back(b);
+		degree[b]++;
+	}
+
+	queue<int> q;
+	for (int i = 1; i <= N; i++)
+	{
+		if (degree[i] == 0) {
+			q.push(i);
+		}
+	}
+
+	while (!q.empty()) {
+		int cur = q.front(); q.pop();
+
+		cout << cur << " ";
+
+		for (int next : adj[cur])
+		{
+			degree[next]--;
+			if (degree[next] == 0) {
+				q.push(next);
+			}
+		}
+	}
+
+	return 0;
 }
