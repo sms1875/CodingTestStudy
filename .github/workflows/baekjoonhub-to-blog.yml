@@ -19,11 +19,15 @@ jobs:
           repository: 'sms1875/CodingTestStudy'
           path: 'BaekjoonHub'
 
-      # 2. Parse New Problem Files and Generate Blog Post
+      # 2. Create Blog Post Format and _posts Directory
       - name: Create Blog Post Format
         run: |
+          echo "Creating _posts directory..."
+          mkdir -p ./BaekjoonHub/_posts
           echo "Generating blog posts from newly added problems..."
-          # BaekjoonHub 레포에서 문제 파일을 파싱하여 새로운 마크다운 파일 생성 로직 작성
+          # 이 부분에서 README.md 파일을 _posts 폴더에 복사 또는 생성하는 로직 추가
+          # 예를 들어, 모든 README.md 파일을 _posts 폴더로 복사
+          find ./BaekjoonHub -name "README.md" -exec cp {} ./BaekjoonHub/_posts/ \;
 
       # 3. Checkout Chirpy Blog Repository
       - name: Checkout Chirpy Blog Repository
@@ -40,8 +44,8 @@ jobs:
           cp -R ./BaekjoonHub/_posts/* ./ChirpyBlog/_posts/
 
       # 5. Commit and Push to Chirpy Blog Repository
-      - name: Commit and Push to sms1875.github.io
-        working-directory: sms1875.github.io
+      - name: Commit and Push to Chirpy Blog
+        working-directory: ChirpyBlog
         run: |
           git config user.name "sms1875[bot]"
           git config user.email "sms1875@gmail.com"
