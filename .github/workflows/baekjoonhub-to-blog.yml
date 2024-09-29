@@ -9,30 +9,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. BaekjoonHub Repository Checkout
       - name: Checkout BaekjoonHub Repository
         uses: actions/checkout@v2
         with:
           repository: 'sms1875/CodingTestStudy'
           path: 'BaekjoonHub'
 
-      # 2. 각 README.md와 코드를 개별 Markdown 파일로 변환하여 저장
       - name: Convert Each README.md to Individual Blog Post
         id: convert
         run: |
           mkdir -p ./BaekjoonHub/_posts
           COMMIT_DATE=$(date -u +"%Y-%m-%d")
 
-          # README.md 파일이 존재하는 모든 디렉토리에 대해 개별적으로 처리
-          for readme in $(find ./BaekjoonHub -name "README.md"); do
-            # README.md가 있는 디렉토리에서 해당 문제의 이름 추출
-            PROBLEM_DIR=$(dirname "$readme")
-            PROBLEM_TITLE=$(basename "$PROBLEM_DIR")
-            
-            # README.md의 첫 줄에서 문제 제목 추출
-            TITLE=$(head -n 1 "$readme" | sed 's/\[//;s/\]//;s/ - /: /')
+          # Set LC_ALL to avoid locale issues with sed
+          export LC_ALL=C
 
-            # 모든 특수문자 제거 (한글, 영문, 숫자, 공백, `_`, `-` 만 남김)
+          # Iterate through each README.md file
+          for readme in $(find ./BaekjoonHub -name "README.md"); do
+            # Get directory of README file to find code files
+            PROBLEM_DIR=$(dirname "$readme")
+            
+            # Extract problem information from README.md
+            TITLE=$(head -n 1 "$readme" | sed 's/\[//;s/\]//;s/ - /: /')
+            
+            # Remove special characters safely (영문, 한글, 숫자, 공백, _, - 만 남김)
             SAFE_TITLE=$(echo "$TITLE" | sed 's/[^a-zA-Z0-9가-힣 _-]//g')
             
             # 플랫폼 추출 (백준, SWEA 등)
@@ -48,7 +48,7 @@ jobs:
 
             # README.md 내용 파싱
             PROBLEM_INFO=$(cat "$readme" | sed 's/{{/\\{\\{/g; s/{%/\\{%/g')
-            
+
             # Markdown 내용 구성
             MARKDOWN_CONTENT="$MARKDOWN_HEADER$PROBLEM_INFO\n"
 
@@ -69,7 +69,6 @@ jobs:
             echo -e "$MARKDOWN_CONTENT" > "./BaekjoonHub/_posts/$FILENAME"
           done
 
-      # 3. Chirpy 블로그 레포지토리 체크아웃
       - name: Checkout Chirpy Blog Repository
         uses: actions/checkout@v2
         with:
@@ -77,13 +76,10 @@ jobs:
           path: 'ChirpyBlog'
           token: ${{ secrets.ACCESS_TOKEN }}
 
-      # 4. 변환된 Markdown 파일들을 Chirpy 블로그 레포지토리로 이동
       - name: Move Generated Files to Blog
         run: |
-          echo "Copying generated blog posts to Chirpy blog repository..."
           cp -R ./BaekjoonHub/_posts/* ./ChirpyBlog/_posts/
 
-      # 5. Chirpy 블로그 레포지토리에 커밋하고 푸시
       - name: Commit and Push to Chirpy Blog
         working-directory: ChirpyBlog
         run: |
