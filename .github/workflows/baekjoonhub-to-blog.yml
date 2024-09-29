@@ -2,10 +2,7 @@ name: BaekjoonHub to Blog
 on:
   push:
     paths:
-      - '**/README.md'
-      - '**/*.cpp'
-      - '**/*.java'
-      - '**/*.py'
+      - '**/README.md'  # README.md 파일이 푸시될 때 트리거
 
 jobs:
   update-blog:
@@ -19,15 +16,57 @@ jobs:
           repository: 'sms1875/CodingTestStudy'
           path: 'BaekjoonHub'
 
-      # 2. Create Blog Post Format and _posts Directory
-      - name: Create Blog Post Format
+      # 2. Parse README.md and Generate Blog Post
+      - name: Convert README.md and Include Source Code
+        id: convert
         run: |
-          echo "Creating _posts directory..."
+          # Make directory for _posts if not exist
           mkdir -p ./BaekjoonHub/_posts
-          echo "Generating blog posts from newly added problems..."
-          # 이 부분에서 README.md 파일을 _posts 폴더에 복사 또는 생성하는 로직 추가
-          # 예를 들어, 모든 README.md 파일을 _posts 폴더로 복사
-          find ./BaekjoonHub -name "README.md" -exec cp {} ./BaekjoonHub/_posts/ \;
+
+          # Get the current datetime in the format YYYY-MM-DD
+          COMMIT_DATE=$(date -u +"%Y-%m-%d")
+
+          # Iterate through each README.md file
+          for readme in $(find ./BaekjoonHub -name "README.md"); do
+            # Extract directory of the README file to find corresponding code files
+            PROBLEM_DIR=$(dirname "$readme")
+            
+            # Extract problem information from README.md
+            TITLE=$(head -n 1 "$readme" | sed 's/\[//;s/\]//;s/\ - /: /;s/ /_/g')
+            PLATFORM=$(echo "$TITLE" | cut -d'_' -f1)
+            
+            # Read README.md content
+            PROBLEM_INFO=$(cat "$readme")
+
+            # Search for code files in the same directory
+            CODE_FILES=$(find "$PROBLEM_DIR" -type f \( -name "*.cpp" -o -name "*.java" -o -name "*.py" \))
+
+            # Include code in markdown content
+            CODE_CONTENT=""
+            for code in $CODE_FILES; do
+              LANG=$(echo "$code" | sed 's/.*\.//')  # Extract file extension for language
+              CODE_BLOCK=$(cat "$code")
+              CODE_CONTENT="$CODE_CONTENT\n\n### 소스 코드 ($LANG)\n\`\`\`$LANG\n$CODE_BLOCK\n\`\`\`"
+            done
+
+            # Generate markdown content
+            MARKDOWN_CONTENT=$(echo "---"
+                               echo "title: \"$TITLE\""
+                               echo "date: $COMMIT_DATE"
+                               echo "categories: [ \"coding test\" ]"
+                               echo "tags: [ \"$PLATFORM\", \"coding test\" ]"
+                               echo "---"
+                               echo ""
+                               echo "$PROBLEM_INFO"
+                               echo "$CODE_CONTENT"
+                               )
+                               
+            # Create filename with commit date and problem title
+            FILENAME=$(echo "$COMMIT_DATE-$TITLE.md" | sed 's/ /-/g')
+
+            # Save to _posts directory
+            echo "$MARKDOWN_CONTENT" > "./BaekjoonHub/_posts/$FILENAME"
+          done
 
       # 3. Checkout Chirpy Blog Repository
       - name: Checkout Chirpy Blog Repository
@@ -35,7 +74,7 @@ jobs:
         with:
           repository: 'sms1875/sms1875.github.io'
           path: 'ChirpyBlog'
-          token: ${{ secrets.ACCESS_TOKEN }}  # 권한 설정 (GitHub Secrets 활용)
+          token: ${{ secrets.ACCESS_TOKEN }}
 
       # 4. Copy Generated Files to Chirpy Blog Repository
       - name: Move Generated Files to Blog
@@ -47,8 +86,8 @@ jobs:
       - name: Commit and Push to Chirpy Blog
         working-directory: ChirpyBlog
         run: |
-          git config user.name "sms1875[bot]"
-          git config user.email "sms1875@gmail.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
           git commit -m "Add new problem posts from BaekjoonHub"
           git push origin main
