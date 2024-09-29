@@ -1,0 +1,46 @@
+name: BaekjoonHub to Blog
+on:
+  push:
+    paths:
+      - '**/README.md'
+      - '**/*.cpp'
+      - '**/*.java'
+      - '**/*.py'
+
+jobs:
+  update-blog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout BaekjoonHub Repository
+        uses: actions/checkout@v2
+        with:
+          repository: 'sms1875/CodingTestStudy'
+          path: 'BaekjoonHub'
+
+      - name: Extract New Problem Files
+        run: |
+          # 새로 추가된 README.md와 코드 파일 확인
+          echo "Checking for newly added README.md files..."
+          # 문제 파일 추출 (example)
+          # 추가된 모든 문제 파일을 확인하고 추출하여 변수에 저장하거나 파일로 변환합니다.
+
+      - name: Create Blog Post Format
+        run: |
+          # 문제 정보를 추출하고 마크다운 파일로 변환
+          echo "Converting problem files to Markdown format for Chirpy blog..."
+          # 예시:
+          # 문제별 README.md 파일을 읽고, 코드를 포함하여 마크다운 파일로 변환하여 `_posts` 폴더에 저장합니다.
+
+      - name: Commit and Push to Blog Repository
+        uses: actions/checkout@v2
+        with:
+          repository: 'sms1875/sms1875.github.io'
+          path: 'ChirpyBlog'
+        
+      - name: Push to Chirpy Blog
+        run: |
+          git config --local user.email "your-email@example.com"
+          git config --local user.name "github-actions[bot]"
+          git add .
+          git commit -m "Add new problem post"
+          git push
