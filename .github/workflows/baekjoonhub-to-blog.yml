@@ -59,7 +59,11 @@ jobs:
             for code in $CODE_FILES; do
               LANG=$(echo "$code" | sed 's/.*\.//')  # 확장자로 언어 구분
               CODE_BLOCK=$(cat "$code")
-              MARKDOWN_CONTENT="$MARKDOWN_CONTENT\n\n### 소스 코드 ($LANG)\n\`\`\`$LANG\n$CODE_BLOCK\n\`\`\`"
+
+              # 이스케이프 처리: {{, }}와 {% %}를 코드 내에서 찾아 자동 변환
+              ESCAPED_CODE_BLOCK=$(echo "$CODE_BLOCK" | sed 's/{{/\\{\\{/g; s/}}/\\}\\}/g; s/{%/\\{%/g; s/%}/\\%}/g')
+
+              MARKDOWN_CONTENT="$MARKDOWN_CONTENT\n\n### 소스 코드 ($LANG)\n\`\`\`$LANG\n$ESCAPED_CODE_BLOCK\n\`\`\`"
             done
 
             # 파일 이름을 커밋 날짜와 문제 제목을 기반으로 생성
