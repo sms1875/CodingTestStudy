@@ -2,69 +2,74 @@ name: BaekjoonHub to Blog
 on:
   push:
     paths:
-      - '**/README.md'
+      - '**/README.md'  # README.md 파일이 푸시될 때만 트리거
 
 jobs:
   update-blog:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. BaekjoonHub Repository Checkout
       - name: Checkout BaekjoonHub Repository
         uses: actions/checkout@v2
         with:
           repository: 'sms1875/CodingTestStudy'
           path: 'BaekjoonHub'
 
-      - name: Convert README.md and Include Source Code
+      # 2. 각 README.md와 코드를 개별 Markdown 파일로 변환하여 저장
+      - name: Convert Each README.md to Individual Blog Post
         id: convert
         run: |
           mkdir -p ./BaekjoonHub/_posts
           COMMIT_DATE=$(date -u +"%Y-%m-%d")
 
+          # README.md 파일이 존재하는 모든 디렉토리에 대해 개별적으로 처리
           for readme in $(find ./BaekjoonHub -name "README.md"); do
-            # Get directory of README file to find code files
+            # README.md가 있는 디렉토리에서 해당 문제의 이름 추출
             PROBLEM_DIR=$(dirname "$readme")
+            PROBLEM_TITLE=$(basename "$PROBLEM_DIR")
             
-            # Extract problem information from README.md
-            TITLE=$(head -n 1 "$readme" | sed 's/\[//;s/\]//;s/\ - /: /;s/ /_/g')
-            PLATFORM=$(echo "$TITLE" | cut -d'_' -f1)
+            # README.md의 첫 줄에서 문제 제목 추출
+            TITLE=$(head -n 1 "$readme" | sed 's/\[//;s/\]//;s/ - /: /')
             
-            # Remove special characters from the title to create a valid filename
-            SAFE_TITLE=$(echo "$TITLE" | sed 's/[#&?.,\/\]\[]//g')  # Remove special characters
+            # 파일 이름으로 사용할 안전한 제목 생성 (특수문자 제거)
+            SAFE_TITLE=$(echo "$TITLE" | sed 's/[#&?.,\/\]\[]//g')
             
-            # Read README.md content and escape Liquid template syntax
+            # 플랫폼 추출 (백준, SWEA 등)
+            PLATFORM=$(echo "$TITLE" | awk '{print $1}')
+
+            # Markdown 헤더 부분 구성
+            MARKDOWN_HEADER="---\n"
+            MARKDOWN_HEADER+="title: \"$TITLE\"\n"
+            MARKDOWN_HEADER+="date: $COMMIT_DATE\n"
+            MARKDOWN_HEADER+="categories: [ \"coding test\" ]\n"
+            MARKDOWN_HEADER+="tags: [ \"$PLATFORM\", \"coding test\" ]\n"
+            MARKDOWN_HEADER+="---\n\n"
+
+            # README.md 내용 파싱
             PROBLEM_INFO=$(cat "$readme" | sed 's/{{/\\{\\{/g; s/{%/\\{%/g')
+            
+            # Markdown 내용 구성
+            MARKDOWN_CONTENT="$MARKDOWN_HEADER$PROBLEM_INFO\n"
 
-            # Search for code files in the same directory
-            CODE_FILES=$(find "$PROBLEM_DIR" -type f \( -name "*.cpp" -o -name "*.java" -o -name "*.py" \))
+            # 해당 디렉토리의 코드 파일을 찾아 추가
+            CODE_FILES=$(find "$PROBLEM_DIR" -type f \( -name "*.cpp" -o -name "*.java" -o -name "*.py" -o -name "*.cc" \))
 
-            # Include code in markdown content with proper line breaks
-            CODE_CONTENT=""
+            # 각 코드 파일을 Markdown에 추가
             for code in $CODE_FILES; do
-              LANG=$(echo "$code" | sed 's/.*\.//')  # Extract file extension for language
+              LANG=$(echo "$code" | sed 's/.*\.//')  # 확장자로 언어 구분
               CODE_BLOCK=$(cat "$code")
-              
-              # Use multiple line strings to maintain line breaks
-              CODE_CONTENT="$CODE_CONTENT\n\n### 소스 코드 ($LANG)\n\`\`\`$LANG\n$CODE_BLOCK\n\`\`\`"
+              MARKDOWN_CONTENT="$MARKDOWN_CONTENT\n\n### 소스 코드 ($LANG)\n\`\`\`$LANG\n$CODE_BLOCK\n\`\`\`"
             done
 
-            # Generate markdown content with proper line breaks
-            MARKDOWN_CONTENT="---\n"
-            MARKDOWN_CONTENT+="title: \"$TITLE\"\n"
-            MARKDOWN_CONTENT+="date: $COMMIT_DATE\n"
-            MARKDOWN_CONTENT+="categories: [ \"coding test\" ]\n"
-            MARKDOWN_CONTENT+="tags: [ \"$PLATFORM\", \"coding test\" ]\n"
-            MARKDOWN_CONTENT+="---\n\n"
-            MARKDOWN_CONTENT+="$PROBLEM_INFO\n"
-            MARKDOWN_CONTENT+="$CODE_CONTENT\n"
-
-            # Create filename with commit date and sanitized problem title
+            # 파일 이름을 커밋 날짜와 문제 제목을 기반으로 생성
             FILENAME=$(echo "$COMMIT_DATE-$SAFE_TITLE.md" | sed 's/ /-/g')
 
-            # Save to _posts directory with actual line breaks using echo -e
+            # Markdown 파일을 _posts 디렉토리에 생성
             echo -e "$MARKDOWN_CONTENT" > "./BaekjoonHub/_posts/$FILENAME"
           done
 
+      # 3. Chirpy 블로그 레포지토리 체크아웃
       - name: Checkout Chirpy Blog Repository
         uses: actions/checkout@v2
         with:
@@ -72,10 +77,13 @@ jobs:
           path: 'ChirpyBlog'
           token: ${{ secrets.ACCESS_TOKEN }}
 
+      # 4. 변환된 Markdown 파일들을 Chirpy 블로그 레포지토리로 이동
       - name: Move Generated Files to Blog
         run: |
+          echo "Copying generated blog posts to Chirpy blog repository..."
           cp -R ./BaekjoonHub/_posts/* ./ChirpyBlog/_posts/
 
+      # 5. Chirpy 블로그 레포지토리에 커밋하고 푸시
       - name: Commit and Push to Chirpy Blog
         working-directory: ChirpyBlog
         run: |
